@@ -1,3 +1,5 @@
 *.csv
 *.xlsx
 *.xml
+.env
+__pycache__
