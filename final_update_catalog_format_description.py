@@ -41,16 +41,12 @@ def format_description(description_text, tech_text, equipment_text):
                     char_count += len(p_clean) + 20
                     result += f'<p data-end="{char_count}" data-start="{start_pos}">{p_clean}</p>\n\n'
     
-    # Добавляем разделитель
+    # Добавляем технические характеристики
     if tech_text:
-        start_pos = char_count
-        char_count += 5
-        result += f'<hr data-end="{char_count}" data-start="{start_pos}" />\n'
-        
         # Заголовок характеристик
         start_pos = char_count
         char_count += 29
-        result += f'<p data-end="{char_count}" data-start="{start_pos}">Технические характеристики:</p>\n\n'
+        result += f'<p data-end="{char_count}" data-start="{start_pos}" style="font-weight: bold; font-size: 18px;">Технические характеристики:</p>\n\n'
         
         # Парсим характеристики
         tech_clean = tech_text.replace('<![CDATA[', '').replace(']]>', '')
@@ -62,14 +58,14 @@ def format_description(description_text, tech_text, equipment_text):
             
             for char in characteristics:
                 li_start = char_count
-                char_count += len(char) + 10
+                char_count += len(char) + 5
                 li_end = char_count
                 
-                p_start = char_count - len(char) - 5
-                p_end = char_count - 5
+                p_start = char_count - len(char) - 2
+                p_end = char_count - 2
                 
                 result += f'<li data-end="{li_end}" data-start="{li_start}">\n'
-                result += f'<p data-end="{p_end}" data-start="{p_start}">{char}</p>\n'
+                result += f'<div data-end="{p_end}" data-start="{p_start}" style="line-height:2;">{char}</div>\n'
                 result += '</li>\n'
             
             char_count += 10
@@ -79,12 +75,8 @@ def format_description(description_text, tech_text, equipment_text):
     # Добавляем комплектацию
     if equipment_text:
         start_pos = char_count
-        char_count += 5
-        result += f'<hr data-end="{char_count}" data-start="{start_pos}" />\n'
-        
-        start_pos = char_count
         char_count += 15
-        result += f'<p data-end="{char_count}" data-start="{start_pos}">Комплектация:</p>\n\n'
+        result += f'<p data-end="{char_count}" data-start="{start_pos}" style="font-weight: bold; font-size: 18px;">Комплектация:</p>\n\n'
         
         # Парсим комплектацию из таблицы
         equip_clean = equipment_text.replace('<![CDATA[', '').replace(']]>', '')
@@ -96,14 +88,14 @@ def format_description(description_text, tech_text, equipment_text):
             
             for item in equipment_items:
                 li_start = char_count
-                char_count += len(item) + 10
+                char_count += len(item) + 5
                 li_end = char_count
                 
-                p_start = char_count - len(item) - 5
-                p_end = char_count - 5
+                p_start = char_count - len(item) - 2
+                p_end = char_count - 2
                 
                 result += f'<li data-end="{li_end}" data-start="{li_start}">\n'
-                result += f'<p data-end="{p_end}" data-start="{p_start}">{item}</p>\n'
+                result += f'<div data-end="{p_end}" data-start="{p_start}" style="line-height:2;">{item}</div>\n'
                 result += '</li>\n'
             
             char_count += 10
