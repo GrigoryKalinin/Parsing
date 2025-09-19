@@ -80,6 +80,16 @@ def test_ai_generator():
     )
     print(f"Краткое описание: {short_desc}")
     
+    print("\n5. Тестирую генерацию описания из tech данных...")
+    test_tech_data = {
+        'tech': '<table><tr><td>Мощность двигателя</td><td>370 Вт</td></tr><tr><td>Диаметр обработки</td><td>305 мм</td></tr><tr><td>Длина обработки</td><td>1000 мм</td></tr></table>',
+        'equipment': '<table><tr><td>Станок</td><td>1 шт</td></tr><tr><td>Подручник</td><td>1 шт</td></tr><tr><td>Планшайба</td><td>1 шт</td></tr></table>'
+    }
+    
+    test_row = pd.Series(test_product)
+    tech_description = ai_gen.generate_description_from_tech(test_row, test_tech_data)
+    print(f"Описание из tech данных: {tech_description}")
+    
     print("\n" + "=" * 80)
     print("Тест завершен!")
     
@@ -87,8 +97,8 @@ def test_ai_generator():
     save_test = input("\nСохранить результат тестирования в файл? (y/n): ").lower().strip()
     if save_test == 'y':
         test_results = {
-            'Поле': ['SEO Title', 'META Description', 'META Keywords', 'Краткое описание'],
-            'Сгенерированный контент': [seo_title, meta_desc, meta_keywords, short_desc]
+            'Поле': ['SEO Title', 'META Description', 'META Keywords', 'Краткое описание', 'Описание из tech'],
+            'Сгенерированный контент': [seo_title, meta_desc, meta_keywords, short_desc, tech_description]
         }
         
         df_test = pd.DataFrame(test_results)

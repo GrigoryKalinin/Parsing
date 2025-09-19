@@ -109,9 +109,39 @@ class AIContentGenerator:
         
         return self._make_request(prompt)
     
-
+    def generate_description_from_tech(self, row: pd.Series, tech_data: dict) -> str:
+        """Генерирует описание товара на основе технических характеристик"""
+        name = str(row['Наименование'])
+        category = str(row['Категория: 1'])
+        
+        tech_text = ""
+        if 'tech' in tech_data:
+            tech_clean = re.sub(r'<[^>]+>', '', tech_data['tech'])
+            tech_text += f"Технические характеристики: {tech_clean[:300]}..."
+        
+        if 'equipment' in tech_data:
+            equipment_clean = re.sub(r'<[^>]+>', '', tech_data['equipment'])
+            tech_text += f" Комплектация: {equipment_clean[:200]}..."
+        
+        prompt = f"""
+        Создай описание товара на основе технических данных:
+        Название: {name}
+        Категория: {category}
+        Технические данные: {tech_text}
+        
+        Требования:
+        - 2-3 абзаца
+        - Описание назначения и преимуществ
+        - Основные технические особенности
+        - Привлекательно для покупателя
+        - На русском языке
+        
+        Верни только описание без дополнительного текста.
+        """
+        
+        return self._make_request(prompt, max_tokens=300)
     
-    def _make_request(self, prompt: str) -> str:
+    def _make_request(self, prompt: str, max_tokens: int = 150) -> str:
         """Выполняет запрос к OpenRouter API"""
         try:
             headers = {
@@ -125,7 +155,7 @@ class AIContentGenerator:
                     {"role": "system", "content": "Ты эксперт по SEO и созданию контента для интернет-магазинов."},
                     {"role": "user", "content": prompt}
                 ],
-                "max_tokens": 150,
+                "max_tokens": max_tokens,
                 "temperature": 0.7
             }
             
