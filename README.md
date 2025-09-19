@@ -32,7 +32,16 @@ python update_catalog.py
 - Создает `catalog6_new.csv` из `price_new.csv`
 - Автоматически заполняет: SEO H1, Количество (10), Количество на складе (10), Включен (+)
 
-### 3. Форматирование описаний
+### 3. Добавление описаний в XML
+```bash
+python add_descriptions_to_xml.py
+```
+**Что делает:**
+- Находит товары без описания в `feed-yml-0.xml`
+- Генерирует описания с помощью ИИ для товаров без description
+- Обновляет XML файл с новыми описаниями
+
+### 4. Форматирование описаний
 ```bash
 python final_update_catalog_format_description.py
 ```
@@ -41,7 +50,7 @@ python final_update_catalog_format_description.py
 - Форматирует HTML описания с техническими характеристиками
 - Создает `catalog6_formatted.csv`
 
-### 4. Генерация SEO контента с ИИ
+### 5. Генерация SEO контента с ИИ
 ```bash
 python full_catalog_with_ai.py
 ```
@@ -50,7 +59,7 @@ python full_catalog_with_ai.py
 - Использует DeepSeek API через OpenRouter
 - Создает `catalog6_ai_filled.csv`
 
-### 5. Очистка ИИ контента
+### 6. Очистка ИИ контента
 ```bash
 python clean_ai_content.py
 ```
@@ -79,7 +88,10 @@ python test_ai_generator.py
 ├── catalog6_new.csv                      # Базовый каталог
 ├── catalog6_formatted.csv               # С описаниями из XML
 ├── catalog6_ai_filled.csv               # С ИИ контентом
-└── catalog6_ai_cleaned.csv              # Финальный очищенный каталог
+├── catalog6_ai_cleaned.csv              # Финальный очищенный каталог
+├── add_descriptions_to_xml.py           # Скрипт для добавления описаний в XML
+├── copy_seo_fields.py                   # Копирование SEO полей между файлами
+└── check_empty_fields.py                # Диагностика пустых полей
 ```
 
 ## Генерируемые поля
@@ -89,7 +101,7 @@ python test_ai_generator.py
 - **SEO Meta Description** - генерируется ИИ (150-160 символов)  
 - **SEO Meta Keywords** - генерируется ИИ (5-10 ключевых слов)
 - **Краткое описание** - генерируется ИИ (до 200 символов)
-- **Описание** - берется из XML или остается пустым
+- **Описание** - генерируется ИИ для пустых полей
 - **Количество** - автоматически 10
 - **Количество на складе** - автоматически 10
 - **Включен** - автоматически "+"
@@ -99,4 +111,5 @@ python test_ai_generator.py
 - Все скрипты должны запускаться в указанном порядке
 - API ключ DeepSeek можно получить на https://openrouter.ai/
 - XML файл должен содержать описания товаров с тегами `<description>`, `<tech>`, `<equipment>`
+- Скрипт `add_descriptions_to_xml.py` автоматически добавляет недостающие описания в XML
 - Промежуточные файлы сохраняются для отладки и восстановления

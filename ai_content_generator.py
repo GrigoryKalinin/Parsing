@@ -110,34 +110,54 @@ class AIContentGenerator:
         return self._make_request(prompt)
     
     def generate_description_from_tech(self, row: pd.Series, tech_data: dict) -> str:
-        """Генерирует описание товара на основе технических характеристик"""
+        """Генерирует описание товара"""
         name = str(row['Наименование'])
         category = str(row['Категория: 1'])
+        price = str(row['Цена'])
         
         tech_text = ""
-        if 'tech' in tech_data:
+        if tech_data and 'tech' in tech_data:
             tech_clean = re.sub(r'<[^>]+>', '', tech_data['tech'])
             tech_text += f"Технические характеристики: {tech_clean[:300]}..."
         
-        if 'equipment' in tech_data:
+        if tech_data and 'equipment' in tech_data:
             equipment_clean = re.sub(r'<[^>]+>', '', tech_data['equipment'])
             tech_text += f" Комплектация: {equipment_clean[:200]}..."
         
-        prompt = f"""
-        Создай описание товара на основе технических данных:
-        Название: {name}
-        Категория: {category}
-        Технические данные: {tech_text}
-        
-        Требования:
-        - 2-3 абзаца
-        - Описание назначения и преимуществ
-        - Основные технические особенности
-        - Привлекательно для покупателя
-        - На русском языке
-        
-        Верни только описание без дополнительного текста.
-        """
+        if tech_text:
+            # Если есть технические данные
+            prompt = f"""
+            Создай описание товара на основе технических данных:
+            Название: {name}
+            Категория: {category}
+            Цена: {price} руб.
+            Технические данные: {tech_text}
+            
+            Требования:
+            - 2-3 абзаца
+            - Описание назначения и преимуществ
+            - Основные технические особенности
+            - Привлекательно для покупателя
+            - На русском языке
+            
+            Верни только описание без дополнительного текста.
+            """
+        else:
+            # Если нет технических данных, генерируем обычное описание
+            prompt = f"""
+            Создай описание для товара:
+            Название: {name}
+            Категория: {category}
+            Цена: {price} руб.
+            
+            Требования:
+            - 2-3 предложения
+            - Описание основных характеристик и применения
+            - Привлекательно для покупателя
+            - На русском языке
+            
+            Верни только описание без дополнительного текста.
+            """
         
         return self._make_request(prompt, max_tokens=300)
     
@@ -199,6 +219,10 @@ class AIContentGenerator:
             
         if pd.isna(row.get('Краткое описание')) or row.get('Краткое описание') == '':
             results['Краткое описание'] = self.generate_short_description(name, category, price)
+        
+        # Генерируем описание если пустое
+        if pd.isna(row.get('Описание')) or row.get('Описание') == '':
+            results['Описание'] = self.generate_description_from_tech(row, None)
         
         return results
 
