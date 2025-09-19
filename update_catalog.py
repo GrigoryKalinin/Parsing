@@ -25,14 +25,20 @@ for _, row in price_df.iterrows():
     if artikul and artikul != 'nan' and price and price != '0' and current_category:
         category_path = f'Каталог >> Деревообрабатывающее оборудование >> {current_category}'
         
+        product_name = f'Proma {name}'
+        
         new_record = {
             'Артикул': artikul,
             'Артикул модификации': artikul,
-            'Наименование': f'Proma {name}',
+            'Наименование': product_name,
             'Цена': f'{price},00',
             'Категория: 1': category_path,
             'Валюта': 'RUB',
-            'Производитель': 'PROMA'
+            'Производитель': 'PROMA',
+            'SEO H1': product_name,
+            'Количество': 10,
+            'Количество на складе: Основной': 10,
+            'Включен': '+'
         }
         new_records.append(new_record)
 

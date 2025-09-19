@@ -72,22 +72,13 @@ def test_ai_generator():
     )
     print(f"META Keywords: {meta_keywords}")
     
-    print("\n4. Генерирую H1 заголовок...")
-    h1 = ai_gen.generate_h1(
-        test_product['Наименование'], 
-        test_product['Категория: 1']
-    )
-    print(f"H1: {h1}")
-    
-    print("\n5. Генерирую краткое описание...")
+    print("\n4. Генерирую краткое описание...")
     short_desc = ai_gen.generate_short_description(
         test_product['Наименование'], 
         test_product['Категория: 1'], 
         test_product['Цена']
     )
     print(f"Краткое описание: {short_desc}")
-    
-
     
     print("\n" + "=" * 80)
     print("Тест завершен!")
@@ -96,8 +87,8 @@ def test_ai_generator():
     save_test = input("\nСохранить результат тестирования в файл? (y/n): ").lower().strip()
     if save_test == 'y':
         test_results = {
-            'Поле': ['SEO Title', 'META Description', 'META Keywords', 'H1', 'Краткое описание'],
-            'Сгенерированный контент': [seo_title, meta_desc, meta_keywords, h1, short_desc]
+            'Поле': ['SEO Title', 'META Description', 'META Keywords', 'Краткое описание'],
+            'Сгенерированный контент': [seo_title, meta_desc, meta_keywords, short_desc]
         }
         
         df_test = pd.DataFrame(test_results)

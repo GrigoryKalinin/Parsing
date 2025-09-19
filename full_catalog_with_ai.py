@@ -41,7 +41,7 @@ def main():
     ai_generator = AIContentGenerator(api_key)
     
     # Подсчитываем пустые поля
-    empty_fields = ['SEO Titile', 'SEO Meta Keywords', 'SEO Meta Description', 'SEO H1', 'Краткое описание']
+    empty_fields = ['SEO Titile', 'SEO Meta Keywords', 'SEO Meta Description', 'Краткое описание']
     total_empty = 0
     
     print("\nСтатистика пустых полей:")
