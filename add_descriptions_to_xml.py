@@ -2,13 +2,74 @@ import xml.etree.ElementTree as ET
 from ai_content_generator import AIContentGenerator
 import pandas as pd
 import os
+import re
 from dotenv import load_dotenv
 
 # Загружаем переменные окружения
 load_dotenv()
 
+def is_technical_product(name: str, category: str) -> bool:
+    """Определяет, является ли товар техническим (нуждается в tech поле)"""
+    technical_keywords = [
+        'станок', 'двигатель', 'мотор', 'привод', 'шпиндель', 'патрон',
+        'фреза', 'сверло', 'резец', 'диск', 'круг', 'полотно',
+        'насос', 'компрессор', 'генератор', 'трансформатор',
+        'редуктор', 'коробка', 'механизм', 'устройство',
+        'прибор', 'инструмент', 'оборудование', 'машина'
+    ]
+    
+    name_lower = name.lower()
+    category_lower = category.lower()
+    
+    # Проверяем ключевые слова в названии
+    for keyword in technical_keywords:
+        if keyword in name_lower:
+            return True
+    
+    # Проверяем категории
+    technical_categories = ['станки', 'оборудование', 'инструмент', 'механизм']
+    for cat_keyword in technical_categories:
+        if cat_keyword in category_lower:
+            return True
+    
+    return False
+
+def generate_tech_specs(ai_generator: AIContentGenerator, name: str, category: str) -> str:
+    """Генерирует технические характеристики для товара"""
+    prompt = f"""
+    Создай технические характеристики для товара в виде HTML таблицы:
+    Название: {name}
+    Категория: {category}
+    
+    Требования:
+    - Создай реалистичные технические характеристики
+    - Используй HTML таблицу с тегами <table>, <tbody>, <tr>, <td>
+    - Включи 8-15 основных параметров
+    - Параметры должны соответствовать типу оборудования
+    - Используй стандартные единицы измерения (мм, кВт, об/мин, В, кг и т.д.)
+    - На русском языке
+    
+    Пример формата:
+    <table>
+    <tbody>
+    <tr>
+    <td>Напряжение, В</td>
+    <td>380</td>
+    </tr>
+    <tr>
+    <td>Мощность, кВт</td>
+    <td>1,5</td>
+    </tr>
+    </tbody>
+    </table>
+    
+    Верни только HTML таблицу без дополнительного текста.
+    """
+    
+    return ai_generator._make_request(prompt, max_tokens=500)
+
 def main():
-    """Добавляет description в XML файл там, где его нет"""
+    """Добавляет description и tech в XML файл там, где их нет"""
     
     # Получаем API ключ
     env_api_key = os.getenv('API_KEY')
@@ -60,9 +121,10 @@ def main():
         print("Файл feed-yml-0.xml не найден")
         return
     
-    # Ищем товары без description
-    offers_without_desc = []
+    # Ищем товары без description и/или tech
+    offers_to_process = []
     offers_with_desc = 0
+    offers_with_tech = 0
     debug_count = 0
     
     for offer in root.findall('.//offer'):
@@ -70,84 +132,116 @@ def main():
         if vendor_code_elem is not None:
             vendor_code = vendor_code_elem.text.strip()
             description_elem = offer.find('description')
+            tech_elem = offer.find('tech')
             
             # Отладочная информация для первых 5 товаров
             if debug_count < 5:
                 name_elem = offer.find('name')
                 name = name_elem.text if name_elem is not None else 'Нет названия'
                 desc_status = 'Нет элемента' if description_elem is None else ('Пустой' if not description_elem.text or description_elem.text.strip() == '' else f'Есть ({len(description_elem.text)} симв.)')
-                print(f"Отладка {debug_count + 1}: {vendor_code} - {name[:30]}... - Description: {desc_status}")
+                tech_status = 'Нет элемента' if tech_elem is None else ('Пустой' if not tech_elem.text or tech_elem.text.strip() == '' else f'Есть ({len(tech_elem.text)} симв.)')
+                print(f"Отладка {debug_count + 1}: {vendor_code} - {name[:30]}... - Description: {desc_status}, Tech: {tech_status}")
                 debug_count += 1
             
-            # Проверяем отсутствие description или пустое содержимое
+            # Проверяем отсутствие description
             has_description = False
             if description_elem is not None and description_elem.text:
                 desc_text = description_elem.text.strip()
                 if desc_text and desc_text != '' and not desc_text.isspace():
                     has_description = True
+                    offers_with_desc += 1
             
-            if not has_description:
-                if vendor_code in product_data:
-                    offers_without_desc.append((offer, vendor_code))
-            else:
-                offers_with_desc += 1
+            # Проверяем отсутствие tech
+            has_tech = False
+            if tech_elem is not None and tech_elem.text:
+                tech_text = tech_elem.text.strip()
+                if tech_text and tech_text != '' and not tech_text.isspace():
+                    has_tech = True
+                    offers_with_tech += 1
+            
+            # Добавляем в список для обработки если нужно
+            if vendor_code in product_data:
+                product = product_data[vendor_code]
+                needs_description = not has_description
+                needs_tech = not has_tech and is_technical_product(product['name'], product['category'])
+                
+                if needs_description or needs_tech:
+                    offers_to_process.append((offer, vendor_code, needs_description, needs_tech))
     
     total_offers = len(root.findall('.//offer'))
     print(f"Всего товаров в XML: {total_offers}")
     print(f"Товаров с описанием: {offers_with_desc}")
-    print(f"Товаров без описания: {len(offers_without_desc)}")
-    print(f"Товаров не найдено в каталоге: {total_offers - offers_with_desc - len(offers_without_desc)}")
+    print(f"Товаров с tech: {offers_with_tech}")
+    print(f"Товаров для обработки: {len(offers_to_process)}")
     
-    if len(offers_without_desc) == 0:
-        print("Все товары уже имеют описания!")
+    if len(offers_to_process) == 0:
+        print("Все товары уже имеют необходимые поля!")
         return
     
-    # Показываем примеры товаров без описания
-    print(f"\nПримеры товаров без описания:")
-    for i, (offer, vendor_code) in enumerate(offers_without_desc[:3]):
+    # Показываем примеры товаров для обработки
+    print(f"\nПримеры товаров для обработки:")
+    for i, (offer, vendor_code, needs_desc, needs_tech) in enumerate(offers_to_process[:3]):
         name_elem = offer.find('name')
         name = name_elem.text if name_elem is not None else 'Нет названия'
-        print(f"  {i+1}. {vendor_code} - {name}")
+        actions = []
+        if needs_desc:
+            actions.append("description")
+        if needs_tech:
+            actions.append("tech")
+        print(f"  {i+1}. {vendor_code} - {name[:40]}... - Нужно: {', '.join(actions)}")
     
     # Подтверждение
-    proceed = input(f"\nДобавить описания для {len(offers_without_desc)} товаров? (y/n): ").lower().strip()
+    proceed = input(f"\nОбработать {len(offers_to_process)} товаров? (y/n): ").lower().strip()
     if proceed != 'y':
         print("Отменено.")
         return
     
-    # Генерируем описания
-    print("\nНачинаю генерацию описаний...")
-    processed = 0
+    # Обрабатываем товары
+    print("\nНачинаю обработку товаров...")
+    processed_desc = 0
+    processed_tech = 0
     
-    for i, (offer, vendor_code) in enumerate(offers_without_desc):
+    for i, (offer, vendor_code, needs_desc, needs_tech) in enumerate(offers_to_process):
         product = product_data[vendor_code]
-        print(f"Товар {i + 1}/{len(offers_without_desc)}: {product['name'][:40]}...")
+        print(f"Товар {i + 1}/{len(offers_to_process)}: {product['name'][:40]}...")
         
-        # Генерируем описание
         try:
-            # Создаем временный row для совместимости с методом
-            temp_row = pd.Series({
-                'Наименование': product['name'],
-                'Категория: 1': product['category'],
-                'Цена': product['price']
-            })
-            
-            description = ai_generator.generate_description_from_tech(temp_row, {})
-            
-            if description:
-                # Добавляем или обновляем description элемент
-                description_elem = offer.find('description')
-                if description_elem is None:
-                    description_elem = ET.SubElement(offer, 'description')
+            # Генерируем описание если нужно
+            if needs_desc:
+                temp_row = pd.Series({
+                    'Наименование': product['name'],
+                    'Категория: 1': product['category'],
+                    'Цена': product['price']
+                })
                 
-                description_elem.text = description
-                processed += 1
-                print(f"  ✓ Добавлено описание ({len(description)} символов): {description[:50]}...")
-            else:
-                print(f"  ✗ Не удалось сгенерировать описание")
+                description = ai_generator.generate_description_from_tech(temp_row, {})
                 
+                if description:
+                    description_elem = offer.find('description')
+                    if description_elem is None:
+                        description_elem = ET.SubElement(offer, 'description')
+                    
+                    description_elem.text = description
+                    processed_desc += 1
+                    print(f"  ✓ Добавлено описание ({len(description)} символов)")
+            
+            # Генерируем tech если нужно
+            if needs_tech:
+                tech_specs = generate_tech_specs(ai_generator, product['name'], product['category'])
+                
+                if tech_specs and '<table>' in tech_specs:
+                    tech_elem = offer.find('tech')
+                    if tech_elem is None:
+                        tech_elem = ET.SubElement(offer, 'tech')
+                    
+                    tech_elem.text = tech_specs
+                    processed_tech += 1
+                    print(f"  ✓ Добавлены технические характеристики ({len(tech_specs)} символов)")
+                else:
+                    print(f"  ✗ Не удалось сгенерировать tech")
+                    
         except Exception as e:
-            print(f"  ✗ Ошибка генерации для {vendor_code}: {e}")
+            print(f"  ✗ Ошибка обработки {vendor_code}: {e}")
         
         # Промежуточное сохранение каждые 10 товаров
         if (i + 1) % 10 == 0:
@@ -160,7 +254,7 @@ def main():
     # Финальное сохранение
     try:
         tree.write('feed-yml-0.xml', encoding='utf-8', xml_declaration=True)
-        print(f"\nГотово! Добавлено {processed} описаний. XML файл обновлен.")
+        print(f"\nГотово! Добавлено {processed_desc} описаний и {processed_tech} tech полей. XML файл обновлен.")
     except Exception as e:
         print(f"\nОшибка финального сохранения: {e}")
         # Сохраняем резервную копию
